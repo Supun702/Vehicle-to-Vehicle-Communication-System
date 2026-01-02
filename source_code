@@ -1,0 +1,73 @@
+import math
+import random
+import matplotlib.pyplot as plt
+import time
+
+class Vehicle:
+    def __init__(self, vid, x,y, speed):
+        self.vid = vid
+        self.x = x
+        self.y = y
+        self.speed = speed
+        self.range = 50          # communication range
+        self.warning = None      # None or "collision"/"brake"/"congestion"
+
+    def move(self):
+        # simple movement in x-direction
+        self.x += self.speed * 0.1
+
+    def broadcast(self, vehicles):
+        for v in vehicles:
+            if v.vid != self.vid and self.distance(v) <= self.range:
+                v.receive(self)
+
+    def receive(self, sender):
+        # Collision warning
+        if sender.distance(self) < 5:
+            self.warning = f"Collision warning from {sender.vid}"
+        # Emergency brake
+        if sender.warning == "brake":
+            self.warning = f"Emergency brake from {sender.vid}"
+        # Traffic congestion
+        if sender.speed < 5:
+            self.warning = f"Congestion alert from {sender.vid}"
+
+    def distance(self, other):
+        return math.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
+
+# Create vehicles
+vehicles = [Vehicle(i, random.randint(0,50), random.randint(0,20), random.randint(10,20)) for i in range(5)]
+
+# Simulate sudden brake in vehicle 0
+vehicles[0].speed = 0
+vehicles[0].warning = "brake"
+
+# Simulation loop
+plt.ion()
+fig, ax = plt.subplots()
+
+for t in range(50):
+    ax.clear()
+    x_positions = []
+    y_positions = []
+    colors = []
+
+    for v in vehicles:
+        v.move()
+        v.broadcast(vehicles)
+        x_positions.append(v.x)
+        y_positions.append(v.y)
+        if v.warning:
+            colors.append('red')
+        else:
+            colors.append('green')
+        v.warning = None  # reset after each step
+
+    ax.scatter(x_positions, y_positions, c=colors, s=100)
+    ax.set_xlim(0,100)
+    ax.set_ylim(0,30)
+    ax.set_title("Vehicle-to-Vehicle Communication Simulation")
+    plt.pause(0.1)
+
+plt.ioff()
+plt.show()
